@@ -1,0 +1,14 @@
+
+# Rope project settings
+.ropeproject
+
+# PyCharm project setting
+.idea
+.DS_Store
+
+AccordAI.iml
+
+data
+training
+test
+__pycache__
