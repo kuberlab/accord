@@ -5,6 +5,7 @@ import glob
 import os
 import cv2
 import voc.utils as utils
+import numpy as np
 
 
 def data_fn(params, training):
@@ -23,6 +24,8 @@ def data_fn(params, training):
             for img, label in examples:
                 img = cv2.resize(img, (r, r), interpolation=cv2.INTER_LINEAR)
                 label = cv2.resize(label, (r, r), interpolation=cv2.INTER_LINEAR)
+                img = img.astype(np.float32)/255.0
+                label = label.astype(np.float32)/255.0
                 yield img, label
 
         ds = tf.data.Dataset.from_generator(_generator, (tf.float32, tf.float32),
