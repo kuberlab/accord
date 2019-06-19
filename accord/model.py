@@ -6,36 +6,40 @@ import os
 import cv2
 import voc.utils as utils
 
-def data_fn(params,training):
+
+def data_fn(params, training):
     examples = []
-    for f in glob.glob(params['data_set']+'/*.xml'):
+    for f in glob.glob(params['data_set'] + '/*.xml'):
         name = os.path.basename(f)
-        name = name.replace('.xml','.png')
-        img = cv2.imread(os.path.join(params['data_set'],name), cv2.IMREAD_COLOR)
+        name = name.replace('.xml', '.png')
+        img = cv2.imread(os.path.join(params['data_set'], name), cv2.IMREAD_COLOR)
         boxes = utils.generate(f)
-        label = utils.gen_mask((img.shape[0],img.shape[1]),boxes)
-        examples.append((img,label))
+        label = utils.gen_mask((img.shape[0], img.shape[1]), boxes)
+        examples.append((img, label))
     r = params['resolution']
+
     def _input_fn():
         def _generator():
             for img, label in examples:
-                img = cv2.resize(img,(r,r),interpolation=cv2.INTER_LINEAR)
-                label = cv2.resize(label,(r,r),interpolation=cv2.INTER_LINEAR)
+                img = cv2.resize(img, (r, r), interpolation=cv2.INTER_LINEAR)
+                label = cv2.resize(label, (r, r), interpolation=cv2.INTER_LINEAR)
                 yield img, label
 
         ds = tf.data.Dataset.from_generator(_generator, (tf.float32, tf.float32),
-                                            (tf.TensorShape([r,r,3]), tf.TensorShape([r, r,len(utils.clazzes)])))
+                                            (tf.TensorShape([r, r, 3]), tf.TensorShape([r, r, len(utils.clazzes)])))
 
         if training:
-            ds = ds.shuffle(params['batch_size']*2,reshuffle_each_iteration=True)
+            ds = ds.shuffle(params['batch_size'] * 2, reshuffle_each_iteration=True)
         if training:
-            ds = ds.repeat(params['num_epochs']).prefetch(params['batch_size']*2)
+            ds = ds.repeat(params['num_epochs']).prefetch(params['batch_size'] * 2)
         ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
         return ds
 
     return _input_fn
 
+
 def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=None):
+    resolution = params['resolution']
     if mode == tf.estimator.ModeKeys.PREDICT:
         features = features['image']
     training = (mode == tf.estimator.ModeKeys.TRAIN)
@@ -50,7 +54,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     chief_hooks = []
     metrics = {}
     if mode != tf.estimator.ModeKeys.PREDICT:
-        loss = tf.losses.absolute_difference(outs,labels)
+        loss = tf.losses.absolute_difference(outs, labels)
         global_step = tf.train.get_or_create_global_step()
         if training:
             board_hook = MlBoardReporter({
@@ -65,12 +69,19 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
                     opt = tf.train.RMSPropOptimizer(float(params['lr']), params['weight_decay'])
                 train_op = opt.minimize(loss, global_step=global_step)
 
-        tf.summary.image('Reconstruction_Date', outs[0], 3)
-        tf.summary.image('Original_Data', labels[0], 3)
-        tf.summary.image('Reconstruction_Producer', outs[1], 3)
-        tf.summary.image('Original_Producer', labels[1], 3)
-        tf.summary.image('Reconstruction_Limits2Column', outs[2], 3)
-        tf.summary.image('Original_Limits2Column', labels[2], 3)
+        tf.summary.image('Reconstruction_Date', tf.reshape(outs[:, :, :, utils.clazzes['Date']],
+                                                           [params['batch_size'], resolution, resolution, 1]), 3)
+        tf.summary.image('Original_Data', tf.reshape(labels[:, :, :, utils.clazzes['Date']],
+                                                     [params['batch_size'], resolution, resolution, 1]), 3)
+        tf.summary.image('Reconstruction_Producer', tf.reshape(outs[:, :, :, utils.clazzes['Producer']],
+                                                               [params['batch_size'], resolution, resolution, 1]), 3)
+        tf.summary.image('Original_Producer', tf.reshape(labels[:, :, :, utils.clazzes['Producer']],
+                                                         [params['batch_size'], resolution, resolution, 1]), 3)
+        tf.summary.image('Reconstruction_Limits2Column', tf.reshape(outs[:, :, :, utils.clazzes['Limits2Column']],
+                                                                    [params['batch_size'], resolution, resolution, 1]),
+                         3)
+        tf.summary.image('Original_Limits2Column', tf.reshape(labels[:, :, :, utils.clazzes['Limits2Column']],
+                                                              [params['batch_size'], resolution, resolution, 1]), 3)
         hooks = []
 
     else:
@@ -115,5 +126,3 @@ class BoxUnet(tf.estimator.Estimator):
             params=params,
             warm_start_from=warm_start_from
         )
-
-
