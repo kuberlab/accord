@@ -15,7 +15,7 @@ def data_fn(params, training):
         name = name.replace('.xml', '.png')
         img = cv2.imread(os.path.join(params['data_set'], name), cv2.IMREAD_COLOR)
         boxes = utils.generate(f)
-        label = utils.gen_mask((img.shape[0], img.shape[1]), boxes)
+        label = utils.gen_mask((img.shape[0], img.shape[1]), boxes,['Limits2Column'])
         examples.append((img, label))
     r = params['resolution']
 
