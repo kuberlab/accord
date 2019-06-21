@@ -32,9 +32,9 @@ def parse(img):
                                        thickness=2, lineType=cv2.LINE_AA)
     vertical_segments, horizontal_segments = segments
     for l in vertical_segments:
-        img = cv2.line(img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=5)
+        img = cv2.line(img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=3)
     for l in horizontal_segments:
-        img = cv2.line(img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=5)
+        img = cv2.line(img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=3)
 
     coi = COI()
     for cells in tables:
