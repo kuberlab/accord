@@ -34,6 +34,7 @@ def process(inputs, ctx):
     if img is None:
         pages = pdf2image.convert_from_bytes(doc, 300)
         for i, p in enumerate(pages):
+            logging.info('Process page: {}'.format(i))
             img = np.array(p, np.uint8)
             img = img[:, :, ::-1]
             coi, show_img = parse.parse(img)
@@ -44,6 +45,7 @@ def process(inputs, ctx):
                 else:
                     result.append(coi.__dict__)
     else:
+        logging.info('Process one document')
         coi, show_img = parse.parse(img)
         if parse.is_not_empty(coi):
             last_img = show_img
