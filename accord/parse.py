@@ -50,7 +50,7 @@ def parse(img):
                         coi = table_three(coi, img, cells)
                 elif len(cells[0]) > 9:
                     coi = table_second(coi, img, cells)
-    return coi
+    return coi,show_img
 
 
 def remove_prefix(prefix, t):

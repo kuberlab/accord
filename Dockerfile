@@ -11,3 +11,5 @@ RUN pip install pytesseract
 RUN pip install fuzzyset
 
 RUN pip install pdf2image
+
+RUN pip install imutils
