@@ -63,7 +63,7 @@ def process(inputs, ctx):
                         table_output.append(
                             {'policy': name, 'policy_number': l['policy'], 'start': l['start'], 'end': l['end']})
                         for a in l.get('limits', []):
-                            table_output.append({'limit': a['name'], 'value': a['value']})
+                            table_output.append({'limit': a['name'], 'value': str(int(a['value']))})
                     else:
                         table_output.append({'policy': name})
         table_meta = [
@@ -75,7 +75,7 @@ def process(inputs, ctx):
             {"name": "start", "label": "Start"},
             {"name": "end", "label": "End"},
             {"name": "limit", "label": "Limit"},
-            {"name": "value", "label": "Amount", "type": "number", "format": ".1f"},
+            {"name": "value", "label": "Amount"},
         ]
         result = {
             'table_meta': json.dumps(table_meta),
