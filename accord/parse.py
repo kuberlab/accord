@@ -3,9 +3,24 @@ import cv2
 import numpy as np
 import pytesseract
 import PIL.Image as Image
+import utils.deroted as deroted
+import Levenshtein
+
+
+class COI(object):
+    def __init__(self):
+        self.Producer = ''
+        self.Insured = ''
+        self.Holder = ''
+        self.Liability = []
+
+
+def is_not_empty(coi):
+    return coi.Producer != '' or coi.Insured != '' or coi.Holder != '' or len(coi.Liability) > 0
 
 
 def parse(img):
+    img, _ = deroted.derotate3(img)
     tables, segments = lattice.extract_tables(img)
     show_img = np.copy(img)
     for tn, cells in enumerate(tables):
@@ -21,6 +36,7 @@ def parse(img):
     for l in horizontal_segments:
         img = cv2.line(img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=5)
 
+    coi = COI()
     for cells in tables:
         # print('{}-{}'.format(len(cells), len(cells[0])))
         if len(cells) > 0:
@@ -29,43 +45,63 @@ def parse(img):
                     upper = cells[0][0][1]
                     down = cells[-1][0][1]
                     if upper < img.shape[0] / 5:
-                        # First table
-                        # print("First-{}".format(get_bbox(cells,img,3)))
-                        table_one(img, cells)
+                        coi = table_one(coi, img, cells)
                     elif down > img.shape[0] / 2:
-                        # print("Third-{}".format(get_bbox(cells,img,0)))
-                        table_three(img,cells)
+                        coi = table_three(coi, img, cells)
                 elif len(cells[0]) > 9:
-                    table_second(img, cells)
-                    # print("Second-{}".format(get_bbox(cells,img,2)))
+                    coi = table_second(coi, img, cells)
+    return coi
 
 
-def table_one(img, cells):
+def remove_prefix(prefix, t):
+    words = t.split(' ')
+    if len(words) < 1:
+        return t
+    if Levenshtein.ratio(words[0].lower(), prefix.lower()) > 0.75:
+        if len(words) > 1:
+            return ' '.join(words[1:])
+        return ''
+    else:
+        return t
+
+
+def table_one(coi, img, cells):
     bb = get_bbox(cells, img, 2)
     data = extact_text(img, bb)
     prod_bbox = get_bbox([[c[0]] for c in cells[4:7]], img, 0)
-    prod = get_text(prod_bbox, data)
-    print('Prod: {}'.format(prod))
-    ins_bbox = get_bbox([[c[0]] for c in cells[8:]], img, 0)
-    ins = get_text(ins_bbox, data)
-    print('Ins: {}'.format(ins))
 
-def table_three(img, cells):
+    def _producer_extract(t):
+        return remove_prefix('Producer', t)
+
+    def _insured_extract(t):
+        return remove_prefix('INSURED', t)
+
+    prod = get_text(prod_bbox, data, text_map=_producer_extract)
+    coi.Producer = prod
+    ins_bbox = get_bbox([[c[0]] for c in cells[8:]], img, 0)
+    ins = get_text(ins_bbox, data, text_map=_insured_extract)
+    coi.Insured = ins
+    return coi
+
+
+def table_three(coi, img, cells):
     cells = [[c[0]] for c in cells]
-    bb = get_bbox(cells, img,0)
+    bb = get_bbox(cells, img, 0)
     data = extact_text(img, bb)
     holder = get_text(bb, data)
-    print('Holder: {}'.format(holder))
+    coi.Holder = holder
+    return coi
 
-def table_second(img, cells):
+
+def table_second(coi, img, cells):
     if len(cells) < 4:
-        return
+        return coi
     cells = cells[2:len(cells) - 1]
     bb = get_bbox(cells, img, 0)
     data = extact_text(img, bb)
 
     def _get_limits(i1, i2, names):
-        amounts = {}
+        amounts = []
         for i, row in enumerate(cells[i1:i2]):
             amount_bb = get_bbox([[row[-1]]], img, 0)
 
@@ -81,7 +117,7 @@ def table_second(img, cells):
                 name_bb = get_bbox([[row[-2]]], img, 0)
                 name = get_text(name_bb, data)
             if name != '':
-                amounts[name] = amount
+                amounts.append({'name': name, 'value': amount})
         return amounts
 
     def _policy_date(j, i1, i2):
@@ -107,7 +143,12 @@ def table_second(img, cells):
         start = _policy_start_date(i1, i2)
         end = _policy_end_date(i1, i2)
         limits = _get_limits(i1, i2, names)
-        return n, start, end, limits
+        return {
+            'policy': n,
+            'start': start,
+            'end': end,
+            'limits': limits,
+        }
 
     general = {0: 'EACH OCCURRENCE', 1: 'DAMAGE TO RENTED PREMISES (Ea Occurrence)', 2: 'MED EXP (Anyoneperson)',
                3: 'PERSONAL & ADV INJURY', 4: 'GENERAL AGGREGATE', 5: 'PRODUCTS - COMP/OP AGG'}
@@ -115,10 +156,11 @@ def table_second(img, cells):
     umbrela = {0: 'EACH OCCURRENCE', 1: 'AGGREGATE'}
     worker = {0: 'STATUTE OTHER', 1: 'E.L. EACH ACCIDENT', 2: 'E.L. DISEASE - EA EMPLOYEE',
               3: 'E.L. DISEASE - POLICY LIMIT'}
-    print('Commercial General Liability: {}'.format(_policy_data(0, 7, general)))
-    print('Automobile Liability: {}'.format(_policy_data(8, 12, auto)))
-    print('Umbrela Liability: {}'.format(_policy_data(12, 15, umbrela)))
-    print('Worker Compensation: {}'.format(_policy_data(15, 19, worker)))
+    coi.Liability.append({'name': 'Commercial General Liability', 'data': _policy_data(0, 7, general)})
+    coi.Liability.append({'name': 'Automobile Liability', 'data': _policy_data(8, 12, auto)})
+    coi.Liability.append({'name': 'Umbrela Liability', 'data': _policy_data(12, 15, umbrela)})
+    coi.Liability.append({'name': 'Worker Compensation', 'data': _policy_data(15, 19, worker)})
+    return coi
 
 
 def get_text(bb, data, char_filter=None, text_map=None):
@@ -134,12 +176,32 @@ def get_text(bb, data, char_filter=None, text_map=None):
                         tmp.append(c)
                 t = ''.join(tmp)
             text.append((b, t))
-    text = sorted(text, key=lambda x: (x[0][1], x[0][0]))
-    text = [e[1] for e in text]
-    text = ' '.join(text)
+
+    text = sorted(text, key=lambda x: (x[0][3]))
+    text = join_lines(text)
     if text_map is not None:
         text = text_map(text)
     return text
+
+
+def join_lines(tb):
+    lines = []
+    while len(tb) > 0:
+        next = []
+        line = []
+        first = tb[0]
+        median = first[0][1] + (first[0][3] - first[0][1]) / 2
+        for b in tb:
+            if b[0][1] < median and b[0][3] > median:
+                line.append(b)
+            else:
+                next.append(b)
+        line = sorted(line, key=lambda x: (x[0][0]))
+        line = [e[1] for e in line]
+        line = ' '.join(line)
+        lines.append(line)
+        tb = next
+    return ' '.join(lines)
 
 
 def extact_text(img, bbox):

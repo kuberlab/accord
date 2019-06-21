@@ -3,6 +3,8 @@ import glob
 import os
 import cv2
 import accord.parse as parse
+import pdf2image
+import numpy as np
 
 def do_parse():
     if not os.path.exists('./result_tables'):
@@ -11,7 +13,16 @@ def do_parse():
         name = os.path.basename(f)
         print('{}'.format(name))
         img = cv2.imread(os.path.join('./images', name), cv2.IMREAD_COLOR)
-        parse.parse(img)
+        if img is None:
+            pages = pdf2image.convert_from_path(os.path.join('./images', name), 300)
+            for i,p in enumerate(pages):
+                img  = np.array(p,np.uint8)
+                img = img[:,:,::-1]
+                coi = parse.parse(img)
+                print(coi.__dict__)
+            continue
+        coi = parse.parse(img)
+        print(coi.__dict__)
 
 def test():
     if not os.path.exists('./result_tables'):

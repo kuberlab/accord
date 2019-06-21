@@ -43,7 +43,7 @@ def adaptive_threshold(img, process_background=False, blocksize=15, c=-2):
 
 
 def find_lines(threshold, regions=None, direction='horizontal',
-               line_scale=15, iterations=0):
+               line_scale=30, iterations=0):
     """Finds horizontal and vertical lines by applying morphological
     transformations on an image.
     Parameters
