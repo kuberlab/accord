@@ -208,8 +208,17 @@ def extact_text(img, bbox):
     to_process = img[bbox[1]:bbox[3], bbox[0]:bbox[2], :]
     data = pytesseract.image_to_data(Image.fromarray(to_process), config='', output_type=pytesseract.Output.DICT)
     entry = []
+    conf = data['conf']
     for i, text in enumerate(data['text']):
+        if int(conf[i])<30:
+            continue
         if text is None:
+            continue
+        skip = True
+        for c in text:
+            if c.isalnum():
+                skip = False
+        if skip:
             continue
         text = text.replace('|', '')
         text = text.replace('_', '')

@@ -18,7 +18,7 @@ def do_parse():
             for i,p in enumerate(pages):
                 img  = np.array(p,np.uint8)
                 img = img[:,:,::-1]
-                coi = parse.parse(img)
+                coi,_ = parse.parse(img)
                 print(coi.__dict__)
             continue
         coi = parse.parse(img)
