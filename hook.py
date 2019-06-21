@@ -58,9 +58,9 @@ def process(inputs, ctx):
             if r.Liability is not None:
                 for l in r.Liability:
                     if l is not None:
-                        table_out.append({'policy': l['policy'], 'start': l['start'], 'end': l['end']})
+                        table_output.append({'policy': l['policy'], 'start': l['start'], 'end': l['end']})
                         for a in l.get('limits', []):
-                            table_out.append({'limit': a['name'], 'value': l['value']})
+                            table_output.append({'limit': a['name'], 'value': l['value']})
         table_meta = [
             {"name": "Producer", "label": "Producer"},
             {"name": "Insured", "label": "Insured"},
