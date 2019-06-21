@@ -81,13 +81,9 @@ def process(inputs, ctx):
             'table_meta': json.dumps(table_meta),
             'table_output': json.dumps(table_output),
         }
-        if last_img is not None:
-            result['output'] = cv2.imencode(".jpg", last_img, params=[cv2.IMWRITE_JPEG_QUALITY, 95])[1].tostring()
-        else:
-            result['output'] = \
-                cv2.imencode(".jpg", np.zeros((100, 100, 3), np.uint8), params=[cv2.IMWRITE_JPEG_QUALITY, 95])[
-                    1].tostring()
-        return result
+        result['output'] = \
+            cv2.imencode(".jpg", np.zeros((100, 100, 3), np.uint8), params=[cv2.IMWRITE_JPEG_QUALITY, 95])[
+                1].tostring()
 
     else:
         return {'docs': json.dumps(result)}
