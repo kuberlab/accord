@@ -50,7 +50,7 @@ def parse(img):
                         coi = table_three(coi, img, cells)
                 elif len(cells[0]) > 9:
                     coi = table_second(coi, img, cells)
-    return coi,show_img
+    return coi, show_img
 
 
 def remove_prefix(prefix, t):
@@ -152,12 +152,13 @@ def table_second(coi, img, cells):
 
     general = {0: 'EACH OCCURRENCE', 1: 'DAMAGE TO RENTED PREMISES (Ea Occurrence)', 2: 'MED EXP (Anyoneperson)',
                3: 'PERSONAL & ADV INJURY', 4: 'GENERAL AGGREGATE', 5: 'PRODUCTS - COMP/OP AGG'}
-    auto = {0: 'BODILY INJURY (Per person)', 1: 'BODILY INJURY (Per accident)', 2: 'PROPERTY DAMAGE (Per accident)'}
+    auto = {0: 'COMBINED SINGLE LIMIT', 1: 'BODILY INJURY (Per person)', 2: 'BODILY INJURY (Per accident)',
+            3: 'PROPERTY DAMAGE (Per accident)'}
     umbrela = {0: 'EACH OCCURRENCE', 1: 'AGGREGATE'}
     worker = {0: 'STATUTE OTHER', 1: 'E.L. EACH ACCIDENT', 2: 'E.L. DISEASE - EA EMPLOYEE',
               3: 'E.L. DISEASE - POLICY LIMIT'}
     coi.Liability.append({'name': 'Commercial General Liability', 'data': _policy_data(0, 7, general)})
-    coi.Liability.append({'name': 'Automobile Liability', 'data': _policy_data(8, 12, auto)})
+    coi.Liability.append({'name': 'Automobile Liability', 'data': _policy_data(7, 12, auto)})
     coi.Liability.append({'name': 'Umbrela Liability', 'data': _policy_data(12, 15, umbrela)})
     coi.Liability.append({'name': 'Worker Compensation', 'data': _policy_data(15, 19, worker)})
     return coi
@@ -210,7 +211,7 @@ def extact_text(img, bbox):
     entry = []
     conf = data['conf']
     for i, text in enumerate(data['text']):
-        if int(conf[i])<30:
+        if int(conf[i]) < 30:
             continue
         if text is None:
             continue

@@ -21,7 +21,7 @@ def do_parse():
                 coi,_ = parse.parse(img)
                 print(coi.__dict__)
             continue
-        coi = parse.parse(img)
+        coi,_ = parse.parse(img)
         print(coi.__dict__)
 
 def test():
