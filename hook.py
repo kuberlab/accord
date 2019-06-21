@@ -57,15 +57,21 @@ def process(inputs, ctx):
             table_output.append({'Producer': r.Producer, 'Insured': r.Insured, 'Holder': r.Holder})
             if r.Liability is not None:
                 for l in r.Liability:
+                    name = l['name']
+                    l = l['data']
                     if l is not None:
-                        table_output.append({'policy': l['policy'], 'start': l['start'], 'end': l['end']})
+                        table_output.append(
+                            {'policy': name, 'policy_number': l['policy'], 'start': l['start'], 'end': l['end']})
                         for a in l.get('limits', []):
                             table_output.append({'limit': a['name'], 'value': l['value']})
+                    else:
+                        table_output.append({'policy': name})
         table_meta = [
             {"name": "Producer", "label": "Producer"},
             {"name": "Insured", "label": "Insured"},
             {"name": "Holder", "label": "Holder"},
-            {"name": "policy", "label": "#Policy"},
+            {"name": "policy", "label": "Policy"},
+            {"name": "policy_number", "label": "#Policy"},
             {"name": "start", "label": "Start"},
             {"name": "end", "label": "End"},
             {"name": "limit", "label": "Limit"},
@@ -79,7 +85,8 @@ def process(inputs, ctx):
             result['output'] = cv2.imencode(".jpg", last_img, params=[cv2.IMWRITE_JPEG_QUALITY, 95])[1].tostring()
         else:
             result['output'] = \
-            cv2.imencode(".jpg", np.zeros((100, 100, 3), np.uint8), params=[cv2.IMWRITE_JPEG_QUALITY, 95])[1].tostring()
+                cv2.imencode(".jpg", np.zeros((100, 100, 3), np.uint8), params=[cv2.IMWRITE_JPEG_QUALITY, 95])[
+                    1].tostring()
         return result
 
     else:
