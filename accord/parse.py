@@ -59,6 +59,7 @@ def remove_prefix(prefix, t):
         return t
     if Levenshtein.ratio(words[0].lower(), prefix.lower()) > 0.75:
         if len(words) > 1:
+            print('Skip: {}'.format(words[0]))
             return ' '.join(words[1:])
         return ''
     else:
@@ -68,7 +69,7 @@ def remove_prefix(prefix, t):
 def table_one(coi, img, cells):
     bb = get_bbox(cells, img, 2)
     data = extact_text(img, bb)
-    prod_bbox = get_bbox([[c[0]] for c in cells[4:7]], img, 0)
+    prod_bbox = get_bbox([[c[0]] for c in cells[3:7]], img, 0)
 
     def _producer_extract(t):
         return remove_prefix('Producer', t)
