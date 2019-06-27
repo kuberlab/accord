@@ -15,13 +15,17 @@ def do_parse():
         img = cv2.imread(os.path.join('./images', name), cv2.IMREAD_COLOR)
         if img is None:
             pages = pdf2image.convert_from_path(os.path.join('./images', name), 300)
+            name = name.replace('.pdf','')
             for i,p in enumerate(pages):
+                print("\n\nprocess - {}".format(i+1))
                 img  = np.array(p,np.uint8)
                 img = img[:,:,::-1]
-                coi,_ = parse.parse(img)
+                coi,img = parse.parse(img)
+                cv2.imwrite(os.path.join('./result_tables', '{}-{}.jpg'.format(name,i+1)), img)
                 print(coi.__dict__)
             continue
-        coi,_ = parse.parse(img)
+        coi,img = parse.parse(img)
+        cv2.imwrite(os.path.join('./result_tables', name), img)
         print(coi.__dict__)
 
 def test():

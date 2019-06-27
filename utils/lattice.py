@@ -30,9 +30,9 @@ def merge_close_lines(ar, line_tol=2):
 def generate_table_bbox(img):
     image, threshold = adaptive_threshold(img)
     vertical_mask, vertical_segments = find_lines(
-        threshold, direction='vertical')
+        threshold, direction='vertical',line_scale=30)
     horizontal_mask, horizontal_segments = find_lines(
-        threshold, direction='horizontal')
+        threshold, direction='horizontal',line_scale=50)
 
     contours = find_contours(vertical_mask, horizontal_mask)
     table_bbox = find_joints(contours, vertical_mask, horizontal_mask)
@@ -45,7 +45,7 @@ def generate_cells(table_bbox, tk):
     cols.extend([tk[0], tk[2]])
     rows.extend([tk[1], tk[3]])
     cols = merge_close_lines(sorted(cols), line_tol=2)
-    rows = merge_close_lines(sorted(rows, reverse=True), line_tol=2)
+    rows = merge_close_lines(sorted(rows, reverse=True), line_tol=4)
     cols = [(cols[i], cols[i + 1])
             for i in range(0, len(cols) - 1)]
     rows = [(rows[i], rows[i + 1])

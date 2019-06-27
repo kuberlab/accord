@@ -41,15 +41,15 @@ def parse(img):
         # print('{}-{}'.format(len(cells), len(cells[0])))
         if len(cells) > 0:
             if len(cells[0]) > 0:
-                if len(cells[0]) < 4:
+                if len(cells[0]) < 5:
                     upper = cells[0][0][1]
                     down = cells[-1][0][1]
                     if upper < img.shape[0] / 5:
-                        coi = table_one(coi, img, cells)
+                        coi,show_img = table_one(coi, img, cells,show_img)
                     elif down > img.shape[0] / 2:
-                        coi = table_three(coi, img, cells)
+                        coi,show_img = table_three(coi, img, cells,show_img)
                 elif len(cells[0]) > 9:
-                    coi = table_second(coi, img, cells)
+                    coi,show_img = table_second(coi, img, cells,show_img)
     return coi, show_img
 
 
@@ -66,7 +66,7 @@ def remove_prefix(prefix, t):
         return t
 
 
-def table_one(coi, img, cells):
+def table_one(coi, img, cells,show_img):
     bb = get_bbox(cells, img, 2)
     data = extact_text(img, bb)
     prod_bbox = get_bbox([[c[0]] for c in cells[3:7]], img, 0)
@@ -78,34 +78,37 @@ def table_one(coi, img, cells):
         return remove_prefix('INSURED', t)
 
     prod = get_text(prod_bbox, data, text_map=_producer_extract)
+    show_img = cv2.rectangle(show_img, (int(prod_bbox[0]), int(prod_bbox[1])), (int(prod_bbox[2]), int(prod_bbox[3])), (0, 0, 255), 2)
     coi.Producer = prod
     ins_bbox = get_bbox([[c[0]] for c in cells[8:]], img, 0)
     ins = get_text(ins_bbox, data, text_map=_insured_extract)
     coi.Insured = ins
-    return coi
+    show_img = cv2.rectangle(show_img, (int(ins_bbox[0]), int(ins_bbox[1])), (int(ins_bbox[2]), int(ins_bbox[3])), (0, 0, 255), 2)
+    return coi,show_img
 
 
-def table_three(coi, img, cells):
+def table_three(coi, img, cells,show_img):
     cells = [[c[0]] for c in cells]
     bb = get_bbox(cells, img, 0)
+    show_img = cv2.rectangle(show_img, (int(bb[0]), int(bb[1])), (int(bb[2]), int(bb[3])), (0, 0, 255), 2)
     data = extact_text(img, bb)
     holder = get_text(bb, data)
     coi.Holder = holder
-    return coi
+    return coi,show_img
 
 
-def table_second(coi, img, cells):
+def table_second(coi, img, cells,to_show):
     if len(cells) < 4:
-        return coi
+        return coi,to_show
     cells = cells[2:len(cells) - 1]
     bb = get_bbox(cells, img, 0)
     data = extact_text(img, bb)
-
+    show_img = [to_show]
     def _get_limits(i1, i2, names):
         amounts = []
         for i, row in enumerate(cells[i1:i2]):
             amount_bb = get_bbox([[row[-1]]], img, 0)
-
+            show_img[0] = cv2.rectangle(show_img[0], (int(amount_bb[0]), int(amount_bb[1])), (int(amount_bb[2]), int(amount_bb[3])), (0, 0, 255), 2)
             def _amount(x):
                 try:
                     return float(x)
@@ -133,6 +136,7 @@ def table_second(coi, img, cells):
 
     def _policy_number(i1, i2):
         bb = get_bbox([[c[-5]] for c in cells[i1:i2]], img, 0)
+        show_img[0] = cv2.rectangle(show_img[0], (int(bb[0]), int(bb[1])), (int(bb[2]), int(bb[3])), (0, 0, 255), 2)
         return get_text(bb, data, lambda c: (c.isalpha() or c.isdigit()) and c != ' ')
 
     def _policy_data(i1, i2, names={}):
@@ -162,7 +166,7 @@ def table_second(coi, img, cells):
     coi.Liability.append({'name': 'Automobile Liability', 'data': _policy_data(7, 12, auto)})
     coi.Liability.append({'name': 'Umbrela Liability', 'data': _policy_data(12, 15, umbrela)})
     coi.Liability.append({'name': 'Worker Compensation', 'data': _policy_data(15, 19, worker)})
-    return coi
+    return coi,to_show
 
 
 def get_text(bb, data, char_filter=None, text_map=None):
