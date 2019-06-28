@@ -39,9 +39,11 @@ class Parser(object):
                                            thickness=2, lineType=cv2.LINE_AA)
         vertical_segments, horizontal_segments = segments
         for l in vertical_segments:
-            self.parse_img = cv2.line(self.parse_img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=3)
+            self.parse_img = cv2.line(self.parse_img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=2)
         for l in horizontal_segments:
-            self.parse_img = cv2.line(self.parse_img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=3)
+            self.parse_img = cv2.line(self.parse_img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=2)
+
+        self.parse_img[self.parse_img<150] = 0
 
         coi = COI()
         for cells in tables:
@@ -178,7 +180,7 @@ class Parser(object):
             return coi
         #cells = join_cells(cells)
         bb = self.get_bbox(cells, 0)
-        data = self.extact_text(bb)
+        data = self.extact_text(bb,5)
         show_img = [self.show_img]
         def _get_limits(i1, i2, names):
             amounts = []
@@ -193,6 +195,7 @@ class Parser(object):
                         return float(x)
                     except:
                         return 0
+                self.draw_text_box(amount_bb, data)
 
                 amount = self.get_text(amount_bb, data, lambda c: c.isdigit(), _amount)
 
@@ -209,6 +212,7 @@ class Parser(object):
 
         def _policy_date(j, i1, i2):
             bb = self.get_bbox([[c[j]] for c in cells[i1:i2]], 0)
+            self.draw_text_box(bb, data)
             return self.get_text(bb, data, lambda c: (c.isdigit() or c == ':' or c == '-' or c == '/'))
 
         def _policy_start_date(i1, i2):
@@ -252,6 +256,12 @@ class Parser(object):
         return coi
 
 
+    def draw_text_box(self,bb, data):
+        for e in data:
+            b = e['bbox']
+            #if self.is_in(bb, b,0):
+            self.show_img = cv2.rectangle(self.show_img, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), (0, 255, 255), 2)
+
     def get_text(self,bb, data, char_filter=None, text_map=None):
         text = []
         for e in data:
@@ -293,13 +303,13 @@ class Parser(object):
         return ' '.join(lines)
 
 
-    def extact_text(self, bbox):
-        to_process = self.parse_img[bbox[1]:bbox[3], bbox[0]:bbox[2], :]
+    def extact_text(self, bbox,offset=0):
+        to_process = self.parse_img[bbox[1]-offset:bbox[3]+offset, bbox[0]-offset:bbox[2]+offset, :]
         data = pytesseract.image_to_data(Image.fromarray(to_process), config='', output_type=pytesseract.Output.DICT)
         entry = []
         conf = data['conf']
         for i, text in enumerate(data['text']):
-            if int(conf[i]) < 20:
+            if int(conf[i]) < -1:
                 continue
             if text is None:
                 continue
@@ -313,15 +323,15 @@ class Parser(object):
             text = text.replace('_', '')
             if text.strip() == '':
                 continue
-            left = data['left'][i] + bbox[0]
-            top = data['top'][i] + bbox[1]
+            left = data['left'][i] + bbox[0]-offset
+            top = data['top'][i] + bbox[1]-offset
             width = data['width'][i]
             height = data['height'][i]
             entry.append({'bbox': [left, top, left + width, top + height], 'text': text})
         return entry
 
 
-    def is_in(self,boxA, boxB):
+    def is_in(self,boxA, boxB,th=0.5):
         xA = max(boxA[0], boxB[0])
         yA = max(boxA[1], boxB[1])
         xB = min(boxA[2], boxB[2])
@@ -331,7 +341,7 @@ class Parser(object):
 
         boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
 
-        return interArea / boxBArea > 0.5
+        return interArea / boxBArea >= th
 
 
     def bb_intersection_over_union(self,boxA, boxB):
