@@ -299,7 +299,7 @@ class Parser(object):
         entry = []
         conf = data['conf']
         for i, text in enumerate(data['text']):
-            if int(conf[i]) < 1:
+            if int(conf[i]) < 20:
                 continue
             if text is None:
                 continue
