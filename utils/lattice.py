@@ -27,12 +27,12 @@ def merge_close_lines(ar, line_tol=2):
     return ret
 
 
-def generate_table_bbox(img):
+def generate_table_bbox(img,v=30,h=45,it=0):
     image, threshold = adaptive_threshold(img)
     vertical_mask, vertical_segments = find_lines(
-        threshold, direction='vertical',line_scale=30)
+        threshold, direction='vertical',line_scale=v,iterations=it)
     horizontal_mask, horizontal_segments = find_lines(
-        threshold, direction='horizontal',line_scale=50)
+        threshold, direction='horizontal',line_scale=h,iterations=it)
 
     contours = find_contours(vertical_mask, horizontal_mask)
     table_bbox = find_joints(contours, vertical_mask, horizontal_mask)
@@ -57,8 +57,8 @@ def generate_cells(table_bbox, tk):
     return cells
 
 
-def extract_tables(img):
-    table_bbox, segments = generate_table_bbox(img)
+def extract_tables(img,v=30,h=45,it=0):
+    table_bbox, segments = generate_table_bbox(img,v=v,h=h,it=it)
     _tables = []
     for tk in sorted(table_bbox.keys(), key=lambda x: x[1], reverse=True):
         cells = generate_cells(table_bbox, tk)

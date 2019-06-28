@@ -20,11 +20,13 @@ def do_parse():
                 print("\n\nprocess - {}".format(i+1))
                 img  = np.array(p,np.uint8)
                 img = img[:,:,::-1]
-                coi,img = parse.parse(img)
+                p = parse.Parser(img,draw=['first_table'])
+                coi,img = p.parse()
                 cv2.imwrite(os.path.join('./result_tables', '{}-{}.jpg'.format(name,i+1)), img)
                 print(coi.__dict__)
             continue
-        coi,img = parse.parse(img)
+        p = parse.Parser(img,draw=['first_table'])
+        coi,img = p.parse()
         cv2.imwrite(os.path.join('./result_tables', name), img)
         print(coi.__dict__)
 

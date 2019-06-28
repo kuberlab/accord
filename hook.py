@@ -37,7 +37,8 @@ def process(inputs, ctx):
             logging.info('Process page: {}'.format(i))
             img = np.array(p, np.uint8)
             img = img[:, :, ::-1]
-            coi, show_img = parse.parse(img)
+            p = parse.Parser(img,draw=[])
+            coi,show_img = p.parse()
             if parse.is_not_empty(coi):
                 last_img = show_img
                 if table_out:
@@ -46,7 +47,8 @@ def process(inputs, ctx):
                     result.append(coi.__dict__)
     else:
         logging.info('Process one document')
-        coi, show_img = parse.parse(img)
+        p = parse.Parser(img,draw=[])
+        coi,show_img = p.parse()
         if parse.is_not_empty(coi):
             last_img = show_img
             if table_out:
