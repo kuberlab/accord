@@ -84,12 +84,12 @@ class Parser(object):
             if len(cells)>2:
                 cells = cells[-2:]
             bb = self.get_bbox(cells,0)
-            data = self.extact_text(bb)
+            data = self.extact_text(bb,th=10)
             prod_bbox = self.get_bbox([c for c in cells[-2:-1]], 0)
             ins_bbox = self.get_bbox([c for c in cells[-1:]], 0)
         else:
             bb = self.get_bbox(cells, 2)
-            data = self.extact_text(bb)
+            data = self.extact_text(bb,th=10)
             prod_bbox = self.get_bbox([[c[0]] for c in cells[3:7]], 0)
             ins_bbox = self.get_bbox([[c[0]] for c in cells[8:]], 0)
 
@@ -112,7 +112,7 @@ class Parser(object):
         cells = [[c[0]] for c in cells]
         bb = self.get_bbox(cells, 0)
         self.show_img = cv2.rectangle(self.show_img, (int(bb[0]), int(bb[1])), (int(bb[2]), int(bb[3])), (0, 0, 255), 2)
-        data = self.extact_text(bb)
+        data = self.extact_text(bb,th=10)
         holder = self.get_text(bb, data)
         coi.Holder = holder
         return coi
@@ -303,13 +303,13 @@ class Parser(object):
         return ' '.join(lines)
 
 
-    def extact_text(self, bbox,offset=0):
+    def extact_text(self, bbox,offset=0,th=-1):
         to_process = self.parse_img[bbox[1]-offset:bbox[3]+offset, bbox[0]-offset:bbox[2]+offset, :]
         data = pytesseract.image_to_data(Image.fromarray(to_process), config='', output_type=pytesseract.Output.DICT)
         entry = []
         conf = data['conf']
         for i, text in enumerate(data['text']):
-            if int(conf[i]) < -1:
+            if int(conf[i]) < th:
                 continue
             if text is None:
                 continue
