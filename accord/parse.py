@@ -20,11 +20,13 @@ def is_not_empty(coi):
     return coi.Producer != '' or coi.Insured != '' or coi.Holder != '' or len(coi.Liability) > 0
 
 class Parser(object):
-    def __init__(self,img,draw=[]):
+
+    def __init__(self,img,draw=[],number_ocr=None):
         img, _ = deroted.derotate3(img)
         self.original_img = img
         self.show_img = np.copy(img)
         self.parse_img = np.copy(img)
+        self.number_ocr = number_ocr
         self.draw = draw
 
     def parse(self):
@@ -191,13 +193,17 @@ class Parser(object):
                 amount_bb = self.get_bbox([[row[-1]]], 0)
                 show_img[0] = cv2.rectangle(show_img[0], (int(amount_bb[0]), int(amount_bb[1])), (int(amount_bb[2]), int(amount_bb[3])), (0, 0, 255), 2)
                 def _amount(x):
+                    print('Amount {}: {}'.format(i+i1,x))
                     try:
                         return float(x)
                     except:
                         return 0
                 self.draw_text_box(amount_bb, data)
 
-                amount = self.get_text(amount_bb, data, lambda c: c.isdigit(), _amount)
+                if self.number_ocr is not None:
+                    amount = self.number_ocr(amount_bb,self.parse_img)
+                else:
+                    amount = self.get_text(amount_bb, data, lambda c: c.isdigit(), _amount)
 
                 name = names.get(i, '')
                 name_bb = self.get_bbox([[row[-2]]], 0)

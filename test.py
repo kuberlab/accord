@@ -5,10 +5,12 @@ import cv2
 import accord.parse as parse
 import pdf2image
 import numpy as np
+import ocr.gunin as gunin
 
 def do_parse():
     if not os.path.exists('./result_tables'):
         os.mkdir('./result_tables')
+    number_fn = gunin.get_number_fn('./ocr-numbers')
     for f in glob.glob('./images/*'):
         name = os.path.basename(f)
         print('{}'.format(name))
@@ -20,12 +22,12 @@ def do_parse():
                 print("\n\nprocess - {}".format(i+1))
                 img  = np.array(p,np.uint8)
                 img = img[:,:,::-1]
-                p = parse.Parser(img,draw=['first_table'])
+                p = parse.Parser(img,draw=['first_table'],number_ocr=number_fn)
                 coi,img = p.parse()
                 cv2.imwrite(os.path.join('./result_tables', '{}-{}.jpg'.format(name,i+1)), img)
                 print(coi.__dict__)
             continue
-        p = parse.Parser(img,draw=['first_table'])
+        p = parse.Parser(img,draw=['first_table'],number_ocr=number_fn)
         coi,img = p.parse()
         cv2.imwrite(os.path.join('./result_tables', name), img)
         print(coi.__dict__)

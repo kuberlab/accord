@@ -10,6 +10,7 @@ LOG.setLevel(logging.INFO)
 
 PARAMS = {
     'output': 'json',
+    'nocr': 'tesseract',
 }
 
 
@@ -22,6 +23,13 @@ def init_hook(**params):
 
 def process(inputs, ctx):
     table_out = PARAMS['output'] == 'table'
+    nfn = None
+    if PARAMS['nocr']=='driver':
+        import ocr.gunin as gunin
+        def _fn(bbox,image):
+            return gunin.get_number(ctx.drivers[0],bbox,image)
+        nfn = _fn
+
     doc = inputs['doc'][0]
     img = None
     last_img = None
@@ -37,7 +45,7 @@ def process(inputs, ctx):
             logging.info('Process page: {}'.format(i))
             img = np.array(p, np.uint8)
             img = img[:, :, ::-1]
-            p = parse.Parser(img,draw=[])
+            p = parse.Parser(img,draw=[],number_ocr=nfn)
             coi,show_img = p.parse()
             if parse.is_not_empty(coi):
                 last_img = show_img
