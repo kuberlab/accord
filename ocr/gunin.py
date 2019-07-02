@@ -46,7 +46,11 @@ def get_number_fn(model_path):
 
 
 def get_number(drv, bbox, img):
-    image = img[bbox[1]:bbox[3],bbox[0]:bbox[2], :]
+    minx = min(bbox[0]+2,img.shape[1])
+    maxx = max(bbox[2]-2,0)
+    miny = min(bbox[1]+2,img.shape[0])
+    maxy = max(bbox[3]-2,0)
+    image = img[miny:maxy,minx:maxx, ::-1]
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image = cv2.resize(image, (320, 32))
     image = np.stack([image, image, image], axis=-1)
