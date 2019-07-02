@@ -27,7 +27,9 @@ def process(inputs, ctx):
     if PARAMS['nocr']=='driver':
         import ocr.gunin as gunin
         def _fn(bbox,image):
-            return gunin.get_number(ctx.drivers[0],bbox,image)
+            n =  gunin.get_number(ctx.drivers[0],bbox,image)
+            logging.info('From driver: {}'.format(n))
+            return n
         nfn = _fn
 
     doc = inputs['doc'][0]
