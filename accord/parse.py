@@ -1,8 +1,6 @@
 import utils.lattice as lattice
 import cv2
 import numpy as np
-import pytesseract
-import PIL.Image as Image
 import utils.deroted as deroted
 import Levenshtein
 
@@ -21,13 +19,14 @@ def is_not_empty(coi):
 
 class Parser(object):
 
-    def __init__(self,img,draw=[],number_ocr=None):
+    def __init__(self,img,ocr,draw=[],number_ocr=None):
         img, _ = deroted.derotate3(img)
         self.original_img = img
         self.show_img = np.copy(img)
         self.parse_img = np.copy(img)
         self.number_ocr = number_ocr
         self.draw = draw
+        self.ocr = ocr
 
     def parse(self):
         tables, segments = lattice.extract_tables(self.original_img,v=15,h=30)
@@ -45,8 +44,8 @@ class Parser(object):
         for l in horizontal_segments:
             self.parse_img = cv2.line(self.parse_img, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), thickness=2)
 
-        self.parse_img[self.parse_img<150] = 0
-
+        #self.parse_img[self.parse_img<150] = 0
+        self.parse_img = self.ocr.prepare_image(self.parse_img)
         coi = COI()
         for cells in tables:
             # print('{}-{}'.format(len(cells), len(cells[0])))
@@ -202,6 +201,7 @@ class Parser(object):
 
                 if self.number_ocr is not None:
                     amount = self.number_ocr(amount_bb,self.parse_img)
+                    print('Amount {}: {}'.format(i+i1,amount))
                 else:
                     amount = self.get_text(amount_bb, data, lambda c: c.isdigit(), _amount)
 
@@ -310,31 +310,7 @@ class Parser(object):
 
 
     def extact_text(self, bbox,offset=0,th=-1):
-        to_process = self.parse_img[bbox[1]-offset:bbox[3]+offset, bbox[0]-offset:bbox[2]+offset, :]
-        data = pytesseract.image_to_data(Image.fromarray(to_process), config='', output_type=pytesseract.Output.DICT)
-        entry = []
-        conf = data['conf']
-        for i, text in enumerate(data['text']):
-            if int(conf[i]) < th:
-                continue
-            if text is None:
-                continue
-            skip = True
-            for c in text:
-                if c.isalnum():
-                    skip = False
-            if skip:
-                continue
-            text = text.replace('|', '')
-            text = text.replace('_', '')
-            if text.strip() == '':
-                continue
-            left = data['left'][i] + bbox[0]-offset
-            top = data['top'][i] + bbox[1]-offset
-            width = data['width'][i]
-            height = data['height'][i]
-            entry.append({'bbox': [left, top, left + width, top + height], 'text': text})
-        return entry
+        return self.ocr.extact_text(self.parse_img,bbox,offset,th)
 
 
     def is_in(self,boxA, boxB,th=0.5):

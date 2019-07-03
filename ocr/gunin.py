@@ -44,6 +44,7 @@ def get_number_fn(model_path):
 
     return _fn
 
+count = 0
 
 def get_number(drv, bbox, img):
     minx = min(bbox[0]+2,img.shape[1])
@@ -52,7 +53,13 @@ def get_number(drv, bbox, img):
     maxy = max(bbox[3]-2,0)
     image = img[miny:maxy,minx:maxx, ::-1]
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    image = cv2.resize(image, (320, 32))
+    image = cv2.resize(image, (320, 32),interpolation=cv2.INTER_CUBIC)
+    kernel = np.ones((2,2), np.uint8)
+    image = cv2.dilate(image, kernel, iterations=1)
+    global count
+    count += 1
+    print("numbers/amout-{}.jpg".format(count))
+    cv2.imwrite("numbers/amout-{}.jpg".format(count),image)
     image = np.stack([image, image, image], axis=-1)
     image = image.astype(np.float32) / 127.5 - 1
     outputs = drv.predict({'images': np.stack([image], axis=0)})

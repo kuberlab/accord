@@ -4,6 +4,8 @@ import logging
 import pdf2image
 import accord.parse as parse
 import json
+from tesseract.ocr import TesseractParser
+from aws.ocr import AWSParser
 
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
@@ -11,25 +13,37 @@ LOG.setLevel(logging.INFO)
 PARAMS = {
     'output': 'json',
     'nocr': 'tesseract',
+    'ocr': 'tesseract',
+    'aws_access_key_id': None,
+    'aws_secret_access_key': None,
 }
+
+ocr = None
 
 
 def init_hook(**params):
     LOG.info("Init hooks {}".format(params))
     global PARAMS
     PARAMS.update(params)
+    global ocr
+    if PARAMS['ocr'] == 'aws':
+        ocr = AWSParser(aws_access_key_id=params['aws_access_key_id'],
+                        aws_secret_access_key=params['aws_secret_access_key'])
+    else:
+        ocr = TesseractParser()
     LOG.info("Init hooks")
 
 
 def process(inputs, ctx):
     table_out = PARAMS['output'] == 'table'
     nfn = None
-    if PARAMS['nocr']=='driver':
+    if PARAMS['nocr'] == 'driver' and PARAMS['ocr'] != 'aws':
         import ocr.gunin as gunin
-        def _fn(bbox,image):
-            n =  gunin.get_number(ctx.driver,bbox,image)
+        def _fn(bbox, image):
+            n = gunin.get_number(ctx.driver, bbox, image)
             logging.info('From driver: {}'.format(n))
             return n
+
         nfn = _fn
 
     doc = inputs['doc'][0]
@@ -47,8 +61,8 @@ def process(inputs, ctx):
             logging.info('Process page: {}'.format(i))
             img = np.array(p, np.uint8)
             img = img[:, :, ::-1]
-            p = parse.Parser(img,draw=[],number_ocr=nfn)
-            coi,show_img = p.parse()
+            p = parse.Parser(img,ocr, draw=[], number_ocr=nfn)
+            coi, show_img = p.parse()
             if parse.is_not_empty(coi):
                 last_img = show_img
                 if table_out:
@@ -57,8 +71,8 @@ def process(inputs, ctx):
                     result.append(coi.__dict__)
     else:
         logging.info('Process one document')
-        p = parse.Parser(img,draw=[])
-        coi,show_img = p.parse()
+        p = parse.Parser(img,ocr, draw=[])
+        coi, show_img = p.parse()
         if parse.is_not_empty(coi):
             last_img = show_img
             if table_out:
@@ -90,6 +104,7 @@ def process(inputs, ctx):
             {"name": "end", "label": "End"},
             {"name": "limit", "label": "Limit"},
             {"name": "value", "label": "Amount"},
+            {"name": "confidence", "label": "Confidence"},
         ]
         result = {
             'table_meta': json.dumps(table_meta),
