@@ -4,8 +4,7 @@ import logging
 import pdf2image
 import accord.parse as parse
 import json
-from tesseract.ocr import TesseractParser
-from aws.ocr import AWSParser
+
 
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
@@ -27,9 +26,11 @@ def init_hook(**params):
     PARAMS.update(params)
     global ocr
     if PARAMS['ocr'] == 'aws':
+        from aws.ocr import AWSParser
         ocr = AWSParser(aws_access_key_id=params['aws_access_key_id'],
                         aws_secret_access_key=params['aws_secret_access_key'])
     else:
+        from tesseract.ocr import TesseractParser
         ocr = TesseractParser()
     LOG.info("Init hooks")
 
