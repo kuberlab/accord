@@ -44,8 +44,8 @@ class AWSParser(object):
 
         time.sleep(5)
 
-        client = boto3.client('textract')
-        response = client.get_document_text_detection(JobId=job_id)
+
+        response = self.textract.get_document_text_detection(JobId=job_id)
 
         pages.append(response)
         print("Resultset page recieved: {}".format(len(pages)))
@@ -56,7 +56,7 @@ class AWSParser(object):
         while (nextToken):
             time.sleep(5)
 
-            response = client.get_document_text_detection(JobId=job_id, NextToken=nextToken)
+            response = self.textract.get_document_text_detection(JobId=job_id, NextToken=nextToken)
 
             pages.append(response)
             # break
