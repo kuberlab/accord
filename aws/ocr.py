@@ -102,10 +102,7 @@ class AWSParser(object):
         name = '{}-{}.pdf'.format(time.time(),self.i)
         object = self.s3.Object(self.bucket, name)
         object.put(Body=arr)
-        try:
-            self._get_result(name,width,height)
-        except:
-            self.doc = []
+        self._get_result(name,width,height)
         object = self.s3.Object(self.bucket, name)
         object.delete()
         return parse_img
