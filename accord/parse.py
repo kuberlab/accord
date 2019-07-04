@@ -8,8 +8,11 @@ import Levenshtein
 class COI(object):
     def __init__(self):
         self.Producer = ''
+        self.ProducerConfidence = 0
         self.Insured = ''
+        self.InsuredConfidence = 0
         self.Holder = ''
+        self.HolderConfidence = 0
         self.Liability = []
 
 
@@ -100,11 +103,13 @@ class Parser(object):
         def _insured_extract(t):
             return self.remove_prefix('INSURED', t)
 
-        prod = self.get_text(prod_bbox, data, text_map=_producer_extract)
+        prod,cprod = self.get_text(prod_bbox, data, text_map=_producer_extract)
         show_img = cv2.rectangle(self.show_img, (int(prod_bbox[0]), int(prod_bbox[1])), (int(prod_bbox[2]), int(prod_bbox[3])), (0, 0, 255), 2)
         coi.Producer = prod
-        ins = self.get_text(ins_bbox, data, text_map=_insured_extract)
+        coi.ProducerConfidence = cprod
+        ins,cins = self.get_text(ins_bbox, data, text_map=_insured_extract)
         coi.Insured = ins
+        coi.InsuredConfidence = cins
         self.show_img = cv2.rectangle(show_img, (int(ins_bbox[0]), int(ins_bbox[1])), (int(ins_bbox[2]), int(ins_bbox[3])), (0, 0, 255), 2)
         return coi
 
@@ -114,8 +119,9 @@ class Parser(object):
         bb = self.get_bbox(cells, 0)
         self.show_img = cv2.rectangle(self.show_img, (int(bb[0]), int(bb[1])), (int(bb[2]), int(bb[3])), (0, 0, 255), 2)
         data = self.extact_text(bb,th=10)
-        holder = self.get_text(bb, data)
+        holder,cholder = self.get_text(bb, data)
         coi.Holder = holder
+        coi.HolderConfidence = cholder
         return coi
 
 
@@ -201,19 +207,20 @@ class Parser(object):
 
                 if self.number_ocr is not None:
                     amount = self.number_ocr(amount_bb,self.parse_img)
+                    camount = 0
                     print('Amount {}: {}'.format(i+i1,amount))
                 else:
-                    amount = self.get_text(amount_bb, data, lambda c: c.isdigit(), _amount)
+                    amount,camount = self.get_text(amount_bb, data, lambda c: c.isdigit(), _amount)
 
                 name = names.get(i, '')
                 name_bb = self.get_bbox([[row[-2]]], 0)
-                tname = self.get_text(name_bb, data)
+                tname,_ = self.get_text(name_bb, data)
                 #print('Name: {}-{} / {}'.format(i1,i2,tname))
                 if name == '':
                     name_bb = self.get_bbox([[row[-2]]], 0)
-                    name = self.get_text(name_bb, data)
+                    name,_ = self.get_text(name_bb, data)
                 if name != '':
-                    amounts.append({'name': name, 'value': amount})
+                    amounts.append({'name': name, 'value': amount,'confidence':camount})
             return amounts
 
         def _policy_date(j, i1, i2):
@@ -237,14 +244,17 @@ class Parser(object):
                 return None
             if len(cells) < i2:
                 i2 = len(cells)
-            n = _policy_number(i1, i2)
-            start = _policy_start_date(i1, i2)
-            end = _policy_end_date(i1, i2)
+            n,cn = _policy_number(i1, i2)
+            start,cstart = _policy_start_date(i1, i2)
+            end,cend = _policy_end_date(i1, i2)
             limits = _get_limits(i1, i2, names)
             return {
                 'policy': n,
+                'policy_confidence':cn,
                 'start': start,
+                'start_confidence':cstart,
                 'end': end,
+                'end_confidence': cend,
                 'limits': limits,
             }
 
@@ -253,12 +263,12 @@ class Parser(object):
         auto = {0: 'COMBINED SINGLE LIMIT', 1: 'BODILY INJURY (Per person)', 2: 'BODILY INJURY (Per accident)',
                 3: 'PROPERTY DAMAGE (Per accident)'}
         umbrela = {0: 'EACH OCCURRENCE', 1: 'AGGREGATE'}
-        worker = {0: 'STATUTE OTHER', 1: 'E.L. EACH ACCIDENT', 2: 'E.L. DISEASE - EA EMPLOYEE',
-                  3: 'E.L. DISEASE - POLICY LIMIT'}
+        worker = {0: 'E.L. EACH ACCIDENT', 1: 'E.L. DISEASE - EA EMPLOYEE',
+                  2: 'E.L. DISEASE - POLICY LIMIT'}
         coi.Liability.append({'name': 'Commercial General Liability', 'data': _policy_data(0, 7, general)})
         coi.Liability.append({'name': 'Automobile Liability', 'data': _policy_data(7, 12, auto)})
         coi.Liability.append({'name': 'Umbrela Liability', 'data': _policy_data(12, 15, umbrela)})
-        coi.Liability.append({'name': 'Worker Compensation', 'data': _policy_data(15, 19, worker)})
+        coi.Liability.append({'name': 'Worker Compensation', 'data': _policy_data(16, 19, worker)})
         return coi
 
 
@@ -270,6 +280,7 @@ class Parser(object):
 
     def get_text(self,bb, data, char_filter=None, text_map=None):
         text = []
+        confidence = None
         for e in data:
             b = e['bbox']
             if self.is_in(bb, b):
@@ -280,13 +291,18 @@ class Parser(object):
                         if char_filter(c):
                             tmp.append(c)
                     t = ''.join(tmp)
-                text.append((b, t))
-
+                if len(t)>0:
+                    c = e.get('confidence',0)
+                    if confidence is None or c<confidence:
+                        confidence = c
+                    text.append((b, t))
+        if confidence is None:
+            confidence = -1
         text = sorted(text, key=lambda x: (x[0][3]))
         text = self.join_lines(text)
         if text_map is not None:
             text = text_map(text)
-        return text
+        return text,confidence
 
 
     def join_lines(self,tb):

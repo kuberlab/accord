@@ -83,16 +83,22 @@ def process(inputs, ctx):
     if table_out:
         table_output = []
         for r in result:
-            table_output.append({'Producer': r.Producer, 'Insured': r.Insured, 'Holder': r.Holder})
+            def _text(v,c):
+                return '{} ({})'.format(v,c)
+            table_output.append({'Producer': _text(r.Producer,r.ProducerConfidence),
+                                 'Insured': _text(r.Insured,r.InsuredConfidence),
+                                 'Holder': _text(r.Holder,r.HolderConfidence)})
             if r.Liability is not None:
                 for l in r.Liability:
                     name = l['name']
                     l = l['data']
                     if l is not None:
                         table_output.append(
-                            {'policy': name, 'policy_number': l['policy'], 'start': l['start'], 'end': l['end']})
+                            {'policy': name, 'policy_number': _text(l['policy'],l['policy_confidence']),
+                             'start': _text(l['start'],l['start_confidence']),
+                             'end': _text(l['end'],l['end_confidence'])})
                         for a in l.get('limits', []):
-                            table_output.append({'limit': a['name'], 'value': str(int(a['value']))})
+                            table_output.append({'limit': a['name'], 'value': _text(a['value'],a['confidence'])})
                     else:
                         table_output.append({'policy': name})
         table_meta = [
@@ -104,8 +110,7 @@ def process(inputs, ctx):
             {"name": "start", "label": "Start"},
             {"name": "end", "label": "End"},
             {"name": "limit", "label": "Limit"},
-            {"name": "value", "label": "Amount"},
-            {"name": "confidence", "label": "Confidence"},
+            {"name": "value", "label": "Amount"}
         ]
         result = {
             'table_meta': json.dumps(table_meta),

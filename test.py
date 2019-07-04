@@ -14,8 +14,8 @@ def do_parse():
         os.mkdir('./result_tables')
     #number_fn = gunin.get_number_fn('./ocr-numbers')
     number_fn = None
-    #ocr = TesseractParser()
-    ocr = AWSParser()
+    ocr = TesseractParser()
+    #ocr = AWSParser()
     for f in glob.glob('./images/*'):
         name = os.path.basename(f)
         print('{}'.format(name))

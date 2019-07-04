@@ -31,5 +31,5 @@ class TesseractParser(object):
             top = data['top'][i] + bbox[1]-offset
             width = data['width'][i]
             height = data['height'][i]
-            entry.append({'bbox': [left, top, left + width, top + height], 'text': text})
+            entry.append({'bbox': [left, top, left + width, top + height], 'text': text,'confidence': conf[i]})
         return entry
