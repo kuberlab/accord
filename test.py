@@ -12,8 +12,8 @@ from aws.ocr import AWSParser
 def do_parse():
     if not os.path.exists('./result_tables'):
         os.mkdir('./result_tables')
-    #number_fn = gunin.get_number_fn('./ocr-numbers')
-    number_fn = None
+    number_fn = gunin.get_number_fn('./ocr-numbers')
+    #number_fn = None
     ocr = TesseractParser()
     #ocr = AWSParser()
     for f in glob.glob('./images/*'):

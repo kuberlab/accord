@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 import cv2
+import math
 
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
@@ -76,6 +77,6 @@ def get_number(drv, bbox, img):
         if t.isdigit():
             line.append(t)
     try:
-        return int(''.join(line)),int(confidence[0]*100)
+        return int(''.join(line)),int(math.pow(math.e,confidence[0])*100)
     except:
         return 0,0
