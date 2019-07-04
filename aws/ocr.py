@@ -83,13 +83,18 @@ class AWSParser(object):
             for i, page in enumerate(doc.pages, 1):
                 for line in page.lines:
                     for word in line.words:
+                        confidence = 0
+                        try:
+                            confidence = int(word.confidence)
+                        except:
+                            confidence = word.confidence
                         entry.append({'bbox': [
                             int(width * word.geometry.boundingBox.left),
                             int(height * word.geometry.boundingBox.top),
                             int(width * (word.geometry.boundingBox.left + word.geometry.boundingBox.width)),
                             int(height * (word.geometry.boundingBox.top + word.geometry.boundingBox.height))],
                             'text': word.text,
-                            'confidence': word.confidence,
+                            'confidence': confidence,
                         })
             self.doc = entry
     def prepare_image(self, parse_img):
