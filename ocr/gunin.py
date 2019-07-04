@@ -63,7 +63,8 @@ def get_number(drv, bbox, img):
     image = np.stack([image, image, image], axis=-1)
     image = image.astype(np.float32) / 127.5 - 1
     outputs = drv.predict({'images': np.stack([image], axis=0)})
-    predictions = outputs['output']
+    predictions = outputs['text']
+    confidence = outputs['confidence']
     line = []
     end_line = len(chrset_index) - 1
     for i in predictions[0]:
@@ -75,6 +76,6 @@ def get_number(drv, bbox, img):
         if t.isdigit():
             line.append(t)
     try:
-        return int(''.join(line))
+        return int(''.join(line)),int(confidence[0]*100)
     except:
-        return 0
+        return 0,0

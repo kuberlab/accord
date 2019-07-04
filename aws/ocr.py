@@ -80,17 +80,17 @@ class AWSParser(object):
             response = self.getJobResults(job_id)
             doc = Document(response)
             entry = []
-
             for i, page in enumerate(doc.pages, 1):
                 for line in page.lines:
-                    entry.append({'bbox': [
-                        int(width * line.geometry.boundingBox.left),
-                        int(height * line.geometry.boundingBox.top),
-                        int(width * (line.geometry.boundingBox.left + line.geometry.boundingBox.width)),
-                        int(height * (line.geometry.boundingBox.top + line.geometry.boundingBox.height))],
-                        'text': line.text,
-                        'confidence': line.confidence,
-                    })
+                    for word in line.words:
+                        entry.append({'bbox': [
+                            int(width * word.geometry.boundingBox.left),
+                            int(height * word.geometry.boundingBox.top),
+                            int(width * (word.geometry.boundingBox.left + word.geometry.boundingBox.width)),
+                            int(height * (word.geometry.boundingBox.top + word.geometry.boundingBox.height))],
+                            'text': word.text,
+                            'confidence': word.confidence,
+                        })
             self.doc = entry
     def prepare_image(self, parse_img):
         self.i += 1

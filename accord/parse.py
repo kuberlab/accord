@@ -206,8 +206,7 @@ class Parser(object):
                 self.draw_text_box(amount_bb, data)
 
                 if self.number_ocr is not None:
-                    amount = self.number_ocr(amount_bb,self.parse_img)
-                    camount = 0
+                    amount,camount = self.number_ocr(amount_bb,self.parse_img)
                     print('Amount {}: {}'.format(i+i1,amount))
                 else:
                     amount,camount = self.get_text(amount_bb, data, lambda c: c.isdigit(), _amount)
