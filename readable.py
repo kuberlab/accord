@@ -3,15 +3,19 @@ import glob
 from accord.pdf import Parser
 import cv2
 import json
+import io
 
 def do_parse():
     if not os.path.exists('./result_xml'):
         os.mkdir('./result_xml')
 
-    for f in glob.glob('./images/*.PDF'):
+    for f in glob.glob('./images/*.*'):
         name = os.path.basename(f)
         print('{}'.format(name))
-        p = Parser(doc=f,draw=['secod_table'])
+        with open(f,'rb') as foc:
+            doc = foc.read()
+        print(doc)
+        p = Parser(doc=io.BytesIO(doc),draw=['first_table'])
         coi,img = p.parse()
         entries = []
         for e  in p.entries:
