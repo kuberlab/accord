@@ -13,3 +13,7 @@ RUN pip install fuzzyset
 RUN pip install pdf2image
 
 RUN pip install imutils
+
+RUN git clone https://github.com/dreyk/pdfminer.six.git && \
+    cd pdfminer.six && \
+    pip install .

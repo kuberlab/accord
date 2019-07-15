@@ -9,12 +9,12 @@ def do_parse():
     if not os.path.exists('./result_xml'):
         os.mkdir('./result_xml')
 
-    for f in glob.glob('./images/*.*'):
+    for f in glob.glob('./images/*.pdf'):
         name = os.path.basename(f)
         print('{}'.format(name))
         with open(f,'rb') as foc:
             doc = foc.read()
-        print(doc)
+        ##print(doc)
         p = Parser(doc=io.BytesIO(doc),draw=['first_table'])
         coi,img = p.parse()
         entries = []

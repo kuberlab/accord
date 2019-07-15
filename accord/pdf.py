@@ -24,6 +24,7 @@ class COI(object):
         self.Liability = []
 
 
+
 def in_bbox(b, p, size):
     bx1 = b[0]
     by1 = b[1]
@@ -97,6 +98,7 @@ class Parser(object):
         self.entries = []
         self.xml = ''
         self.latters = []
+        self.curves = []
 
     def get_xml_bbox(self, v, h=0):
         bbox = v.split(',')
@@ -131,7 +133,15 @@ class Parser(object):
                 self.process_text(textline.findall('./text'), page_bbox, _add_entry)
             for textline in page.findall('./figure/textbox/textline'):
                 self.process_text(textline.findall('./text'), page_bbox, _add_entry)
+            for curve in page.findall('./curve'):
+                pts = curve.attrib['pts'].split(',')
 
+                for i in range(0,len(pts),2):
+                    if (3+i)>=len(pts):
+                        break
+                    bbox = [float(pts[0+i]),page_bbox[3]-float(pts[1+i]),float(pts[2+i]),page_bbox[3]-float(pts[3+i])]
+
+                    self.curves.append(bbox)
             for line in page.findall('./line'):
                 width = int(line.attrib['linewidth'])
                 bbox = self.get_xml_bbox(line.attrib['bbox'], page_bbox[3])
@@ -140,17 +150,17 @@ class Parser(object):
             for rect in page.findall('./rect'):
                 width = int(rect.attrib['linewidth'])
                 bbox = self.get_xml_bbox(rect.attrib['bbox'], page_bbox[3])
-                # img = cv2.rectangle(img, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 0, 0), width+1)
+                #img = cv2.rectangle(img, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 0, 0), width+1)
                 self.rects.append(bbox)
             if page_bbox is not None:
                 break
 
         img = np.ones((int(page_bbox[3]), int(page_bbox[2]), 3), np.uint8) * 255
         for bbox in self.lines:
-            if (bbox[2] - bbox[0]) > 50 or (bbox[3] - bbox[1]) > 50:
+            if (bbox[2] - bbox[0]) > 5 or (bbox[3] - bbox[1]) > 5:
                 img = cv2.line(img, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 0, 0), thickness=2)
         for bbox in self.rects:
-            if bbox[2] - bbox[0] > 50 or (bbox[3] - bbox[1]) > 50:
+            if bbox[2] - bbox[0] > 5 or (bbox[3] - bbox[1]) > 5:
                 img = cv2.rectangle(img, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 0, 0),
                                     thickness=2)
 
